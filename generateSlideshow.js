@@ -1,38 +1,63 @@
-require('dotenv').config();
+import dotenv from 'dotenv';
+import { v2 as cloudinary } from 'cloudinary';
+import { exit } from 'node:process';
 
-const cloudinary = require('cloudinary').v2;
+dotenv.config();
 
-if (typeof process.env.CLOUDINARY_URL === 'undefined') {
-  console.warn("Check you've got a .env file in the root of the project with the CLOUDINARY_URL environment variable for your Cloudinary product environment.");
+if (!process.env.CLOUDINARY_URL) {
+  console.warn(
+    "Check you've got a .env file in the root of the project with the CLOUDINARY_URL environment variable for your Cloudinary product environment."
+  );
+  exit(1);
 }
+
+cloudinary.config(true);
 
 // Return "https" URLs by setting secure: true
 cloudinary.config({
-  secure: true
+  secure: true,
 });
 
+
+/////////////////////////////////////
+// Gets the list of public IDs
+// that have the specified tag
+/////////////////////////////////////
+const getPublicIdsByTag = async (tag = 'property-demo') => {
+  const response = await fetch(
+    `https://res.cloudinary.com/${cloudinary.config().cloud_name}/image/list/${tag}.json`
+  );
+  const { resources } = await response.json();
+  const publicIds = resources.map((resource) => resource.public_id);
+  return publicIds;
+};
+
+// To use your own tag, pass the tag into this function, otherwise the 'property-demo' tag is used
+const publicIds = await getPublicIdsByTag();
 
 /////////////////////////////////////
 // Builds the slideshow URL
 // with random transitions
 /////////////////////////////////////
-function makeSlideshowUrl(jsonAssets) {
-  console.log(jsonAssets);
+const buildUrl = () => {
+
+  // REPLACE THE RANDOM STRINGS IN THESE PUBLIC IDs 
+  // WITH THE UPLOADED ONES AFTER RUNNING SETUP:
+  const emptyVideoPublicId = 'empty_lzglfg.mp4';
+  const introPublicId = 'citc-intro_wswhtj';
+  const outroPublicId = 'citc-outro_nkjysl';
 
   const allTransitions = [
     'fade', 'wipeleft', 'wiperight', 'wipeup', 'wipedown', 'slideleft', 'slideright', 'slideup', 'slidedown', 'circlecrop', 'rectcrop', 'distance', 'fadeblack', 'fadewhite', 'radial', 'smoothleft', 'smoothright', 'smoothup', 'smoothdown', 'circleopen', 'circleclose', 'vertopen', 'vertclose', 'horzopen', 'horzclose', 'dissolve', 'pixelize', 'diagtl', 'diagtr', 'diagbl', 'diagbr', 'hlslice', 'hrslice', 'vuslice', 'vdslice', 'hblur', 'fadegrays', 'wipetl', 'wipetr', 'wipebl', 'wipebr', 'squeezeh', 'squeezev'
   ];
 
   // Start of the URL
-  let slideshowUrl = `https://res.cloudinary.com/${cloudinary.config().cloud_name}/video/upload/du_1.1/ar_16:9,c_fill,w_400/fl_splice:transition_(name_fade;du_1.0),l_docs:citc-intro/du_6.0/ar_16:9,c_fill,w_400/fl_layer_apply/`;
+  let slideshowUrl = `https://res.cloudinary.com/${cloudinary.config().cloud_name}/video/upload/du_1.1/ar_16:9,c_fill,w_400/fl_splice:transition_(name_fade;du_1.0),l_${introPublicId}/du_6.0/ar_16:9,c_fill,w_400/fl_layer_apply/`;
 
-  // For each of the assets in the JSON response
-  for (const asset in jsonAssets.resources) {
+  for (let publicId of publicIds) {
+
     // Pick a random transition
     const transition = allTransitions[Math.floor(Math.random() * allTransitions.length)];
-
-    // Get the public ID of the asset from the JSON response
-    let publicId = jsonAssets.resources[asset].public_id;
 
     // Replace forward slashes with colons
     publicId = publicId.replace(/\//g, ':');
@@ -42,58 +67,11 @@ function makeSlideshowUrl(jsonAssets) {
   }
 
   // Append the outro and the rest of the URL
-  slideshowUrl += "fl_splice:transition_(name_radial;du_1.5),l_docs:citc-outro/du_6.0/ar_16:9,c_fill,w_400/fl_layer_apply/docs/empty.mp4";
+  slideshowUrl += `fl_splice:transition_(name_radial;du_1.5),l_${outroPublicId}/du_6.0/ar_16:9,c_fill,w_400/fl_layer_apply/${emptyVideoPublicId}`;
 
   return slideshowUrl;
-}
-
-/////////////////////////////////////
-// Gets the JSON response of images
-// with the specified tag
-/////////////////////////////////////
-const getList = async (tag) => {
-  try {
-    const http = require('http');
-    const options = {
-      host: 'res.cloudinary.com',
-      path: `/carl/image/list/${tag}.json`
-    };
-
-    http.get(options, (res) => {
-      const { statusCode } = res;
-      let body = '';
-      console.log(`Got response: ${statusCode}`);
-
-      res.on('data', (chunk) => {
-        body += chunk;
-      });
-
-      res.on('end', () => {
-        if (statusCode === 200) {
-          const jsonAssets = JSON.parse(body);
-
-          // Create the slideshow
-          const slideshowUrl = makeSlideshowUrl(jsonAssets);
-
-          console.log(slideshowUrl);
-        } else {
-          console.log("Code wasn't 200!");
-        }
-      });
-    }).on('error', (e) => {
-      console.log(`Got error: ${e.message}`);
-    });
-  } catch (error) {
-    console.error(error);
-  }
 };
 
-//////////////////
-//
-// Main function
-//
-//////////////////
-(async () => {
-  const tag = "property12";
-  await getList(tag);
-})();
+console.log('Slideshow URL: ', buildUrl());
+
+

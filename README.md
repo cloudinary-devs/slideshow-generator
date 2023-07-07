@@ -1,35 +1,44 @@
 # slideshow-generator
 Generate a slideshow from images with the same tag in Cloudinary.
 
-## Instructions
-
-Create a .env file in the root of the project with the CLOUDINARY_URL environment variable for your Cloudinary product environment.
-
-For test purposes, upload these assets from the demo product environment to your product environment:
-
-* [https://res.cloudinary.com/demo/video/upload/docs/empty.mp4](https://res.cloudinary.com/demo/video/upload/docs/empty.mp4)
-* [https://res.cloudinary.com/demo/image/upload/docs/citc-intro.jpg](https://res.cloudinary.com/demo/image/upload/docs/citc-intro.jpg)
-* [https://res.cloudinary.com/demo/image/upload/docs/citc-outro.jpg](https://res.cloudinary.com/demo/image/upload/docs/citc-outro.jpg)
-
-You should have these images in your product environment with the following public IDs: 
-
-* docs/citc-intro
-* docs/citc-outro
-
-And the video with public ID:
-
-* docs/empty
-
-Tag any images in your account that you want to be included in the slideshow with 'property12'. Later, you can change the tag in the main function in generateSlideshow.js.
-
 ## Install
 
 ```
 npm install
 ```
 
+## Set up
+
+Create a **.env** file in the root of the project containing the CLOUDINARY_URL environment variable for your Cloudinary product environment.
+
+For example:
+
+```
+CLOUDINARY_URL=cloudinary://12345:abcde@cloudname
+```
+
+For test purposes, run:
+
+```
+npm run setup
+```
+
+This uploads some test assets into your product environment and tags the images in the slideshow (except the intro and outro) with the tag `property-demo`.
+The public IDs of the uploaded assets contain random strings, so update these consts in `buildURL()` in **generateSlideshow.js**:
+
+* const emptyVideoPublicId = 'empty_aauing.mp4';
+* const introPublicId = 'citc-intro_lngkz4';
+* const outroPublicId = 'citc-outro_dxoige';
+
+To use your own images in the slideshow: 
+
+1. Update `introPublicId` and `outroPublicId` to the public IDs of the assets you want to use for the intro and outro. 
+1. Tag the images in your product environment that you want to be part of the slideshow (except the intro and outro). 
+1. Pass the tag to `getPublicIdsByTag()` (line 36 in **generateSlideshow.js**).
+
+
 ## Run
 
 ```
-node generateSlideshow.js
+npm start
 ```
